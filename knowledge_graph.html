@@ -1,0 +1,127 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 800px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#ff6666", "id": "John Smith", "label": "John Smith", "shape": "dot", "title": "\u003cb\u003eJohn Smith\u003c/b\u003e\u003cbr\u003eOpenness: 0.80\u003cbr\u003eConscientiousness: 0.70\u003cbr\u003eExtraversion: 0.50\u003cbr\u003eAgreeableness: 0.60\u003cbr\u003eNeuroticism: 0.30\u003cbr\u003eDescriptors: visionary, creative, problem-solver, collaborative, decisive"}, {"color": "#6666ff", "id": "Techinnovate", "label": "Techinnovate", "shape": "dot", "title": "\u003cb\u003eTechinnovate\u003c/b\u003e\u003cbr\u003e"}, {"color": "#ff6666", "id": "Sarah Johnson", "label": "Sarah Johnson", "shape": "dot", "title": "\u003cb\u003eSarah Johnson\u003c/b\u003e\u003cbr\u003eOpenness: 0.30\u003cbr\u003eConscientiousness: 0.90\u003cbr\u003eExtraversion: 0.20\u003cbr\u003eAgreeableness: 0.50\u003cbr\u003eNeuroticism: 0.30\u003cbr\u003eDescriptors: analytical, detail-oriented, methodical, focused"}, {"color": "#6666ff", "id": "Datasystems", "label": "Datasystems", "shape": "dot", "title": "\u003cb\u003eDatasystems\u003c/b\u003e\u003cbr\u003e"}, {"color": "#ff6666", "id": "Michael Brown", "label": "Michael Brown", "shape": "dot", "title": "\u003cb\u003eMichael Brown\u003c/b\u003e\u003cbr\u003eOpenness: 0.60\u003cbr\u003eConscientiousness: 0.70\u003cbr\u003eExtraversion: 0.90\u003cbr\u003eAgreeableness: 0.70\u003cbr\u003eNeuroticism: 0.30\u003cbr\u003eDescriptors: outgoing, charismatic, leader, collaborative"}, {"color": "#6666ff", "id": "Mediacorp", "label": "Mediacorp", "shape": "dot", "title": "\u003cb\u003eMediacorp\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Metropolitan Hospital", "label": "Metropolitan Hospital", "shape": "dot", "title": "\u003cb\u003eMetropolitan Hospital\u003c/b\u003e\u003cbr\u003e"}, {"color": "#ff6666", "id": "Dr. Emily Chen", "label": "Dr. Emily Chen", "shape": "dot", "title": "\u003cb\u003eDr. Emily Chen\u003c/b\u003e\u003cbr\u003eOpenness: 0.40\u003cbr\u003eConscientiousness: 0.90\u003cbr\u003eExtraversion: 0.20\u003cbr\u003eAgreeableness: 0.70\u003cbr\u003eNeuroticism: 0.20\u003cbr\u003eDescriptors: calm, patient, meticulous"}, {"color": "#66ff66", "id": "Openness", "label": "Openness", "shape": "dot", "title": "\u003cb\u003eOpenness\u003c/b\u003e\u003cbr\u003e"}, {"color": "#66ff66", "id": "Conscientiousness", "label": "Conscientiousness", "shape": "dot", "title": "\u003cb\u003eConscientiousness\u003c/b\u003e\u003cbr\u003e"}, {"color": "#66ff66", "id": "Extraversion", "label": "Extraversion", "shape": "dot", "title": "\u003cb\u003eExtraversion\u003c/b\u003e\u003cbr\u003e"}, {"color": "#66ff66", "id": "Agreeableness", "label": "Agreeableness", "shape": "dot", "title": "\u003cb\u003eAgreeableness\u003c/b\u003e\u003cbr\u003e"}, {"color": "#66ff66", "id": "Neuroticism", "label": "Neuroticism", "shape": "dot", "title": "\u003cb\u003eNeuroticism\u003c/b\u003e\u003cbr\u003e"}]);
+                  edges = new vis.DataSet([{"arrows": "to", "from": "John Smith", "label": "CEO", "to": "Techinnovate", "width": 1}, {"arrows": "to", "from": "John Smith", "label": "0.80", "to": "Openness", "width": 4.0}, {"arrows": "to", "from": "John Smith", "label": "0.70", "to": "Conscientiousness", "width": 3.5}, {"arrows": "to", "from": "John Smith", "label": "0.50", "to": "Extraversion", "width": 2.5}, {"arrows": "to", "from": "John Smith", "label": "0.60", "to": "Agreeableness", "width": 3.0}, {"arrows": "to", "from": "John Smith", "label": "0.30", "to": "Neuroticism", "width": 1.5}, {"arrows": "to", "from": "Techinnovate", "label": "PARTNERSHIP", "to": "Metropolitan Hospital", "width": 1}, {"arrows": "to", "from": "Sarah Johnson", "label": "CTO", "to": "Techinnovate", "width": 1}, {"arrows": "to", "from": "Sarah Johnson", "label": "PREVIOUS_EMPLOYMENT", "to": "Datasystems", "width": 1}, {"arrows": "to", "from": "Sarah Johnson", "label": "0.30", "to": "Openness", "width": 1.5}, {"arrows": "to", "from": "Sarah Johnson", "label": "0.90", "to": "Conscientiousness", "width": 4.5}, {"arrows": "to", "from": "Sarah Johnson", "label": "0.20", "to": "Extraversion", "width": 1.0}, {"arrows": "to", "from": "Sarah Johnson", "label": "0.50", "to": "Agreeableness", "width": 2.5}, {"arrows": "to", "from": "Sarah Johnson", "label": "0.30", "to": "Neuroticism", "width": 1.5}, {"arrows": "to", "from": "Michael Brown", "label": "HEAD_OF_MARKETING", "to": "Techinnovate", "width": 1}, {"arrows": "to", "from": "Michael Brown", "label": "REPORTS_TO", "to": "John Smith", "width": 1}, {"arrows": "to", "from": "Michael Brown", "label": "PREVIOUS_EMPLOYMENT", "to": "Mediacorp", "width": 1}, {"arrows": "to", "from": "Michael Brown", "label": "0.60", "to": "Openness", "width": 3.0}, {"arrows": "to", "from": "Michael Brown", "label": "0.70", "to": "Conscientiousness", "width": 3.5}, {"arrows": "to", "from": "Michael Brown", "label": "0.90", "to": "Extraversion", "width": 4.5}, {"arrows": "to", "from": "Michael Brown", "label": "0.70", "to": "Agreeableness", "width": 3.5}, {"arrows": "to", "from": "Michael Brown", "label": "0.30", "to": "Neuroticism", "width": 1.5}, {"arrows": "to", "from": "Dr. Emily Chen", "label": "CHIEF_MEDICAL_OFFICER", "to": "Metropolitan Hospital", "width": 1}, {"arrows": "to", "from": "Dr. Emily Chen", "label": "COLLABORATES_WITH", "to": "Techinnovate", "width": 1}, {"arrows": "to", "from": "Dr. Emily Chen", "label": "0.40", "to": "Openness", "width": 2.0}, {"arrows": "to", "from": "Dr. Emily Chen", "label": "0.90", "to": "Conscientiousness", "width": 4.5}, {"arrows": "to", "from": "Dr. Emily Chen", "label": "0.20", "to": "Extraversion", "width": 1.0}, {"arrows": "to", "from": "Dr. Emily Chen", "label": "0.70", "to": "Agreeableness", "width": 3.5}, {"arrows": "to", "from": "Dr. Emily Chen", "label": "0.20", "to": "Neuroticism", "width": 1.0}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"physics": {"enabled": false, "stabilization": {"iterations": 100, "fit": true}, "barnesHut": {"gravitationalConstant": -2000, "centralGravity": 0.1, "springLength": 95, "springConstant": 0.04}, "solver": "barnesHut"}, "interaction": {"dragNodes": true, "navigationButtons": true}, "layout": {"improvedLayout": true}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

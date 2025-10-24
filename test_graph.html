@@ -1,0 +1,127 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 800px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#ff6666", "id": "Albert Einstein", "label": "Albert Einstein", "shape": "dot", "title": "\u003cb\u003eAlbert Einstein\u003c/b\u003e\u003cbr\u003eOpenness: 0.90\u003cbr\u003eConscientiousness: 0.80\u003cbr\u003eExtraversion: 0.30\u003cbr\u003eAgreeableness: 0.60\u003cbr\u003eNeuroticism: 0.40\u003cbr\u003eDescriptors: curious, innovative, intellectual, principled, persistent"}, {"color": "#6666ff", "id": "Theory Of Relativity", "label": "Theory Of Relativity", "shape": "dot", "title": "\u003cb\u003eTheory Of Relativity\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Quantum Theory", "label": "Quantum Theory", "shape": "dot", "title": "\u003cb\u003eQuantum Theory\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "E = Mc2", "label": "E = Mc2", "shape": "dot", "title": "\u003cb\u003eE = Mc2\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Nobel Prize In Physics", "label": "Nobel Prize In Physics", "shape": "dot", "title": "\u003cb\u003eNobel Prize In Physics\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Photoelectric Effect", "label": "Photoelectric Effect", "shape": "dot", "title": "\u003cb\u003ePhotoelectric Effect\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Switzerland", "label": "Switzerland", "shape": "dot", "title": "\u003cb\u003eSwitzerland\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "German Citizenship", "label": "German Citizenship", "shape": "dot", "title": "\u003cb\u003eGerman Citizenship\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Swiss Citizenship", "label": "Swiss Citizenship", "shape": "dot", "title": "\u003cb\u003eSwiss Citizenship\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Swiss Patent Office", "label": "Swiss Patent Office", "shape": "dot", "title": "\u003cb\u003eSwiss Patent Office\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Bern", "label": "Bern", "shape": "dot", "title": "\u003cb\u003eBern\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "University Of Zurich", "label": "University Of Zurich", "shape": "dot", "title": "\u003cb\u003eUniversity Of Zurich\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Berlin", "label": "Berlin", "shape": "dot", "title": "\u003cb\u003eBerlin\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Prussian Academy Of Sciences", "label": "Prussian Academy Of Sciences", "shape": "dot", "title": "\u003cb\u003ePrussian Academy Of Sciences\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Humboldt University Of Berlin", "label": "Humboldt University Of Berlin", "shape": "dot", "title": "\u003cb\u003eHumboldt University Of Berlin\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Kaiser Wilhelm Institute For Physics", "label": "Kaiser Wilhelm Institute For Physics", "shape": "dot", "title": "\u003cb\u003eKaiser Wilhelm Institute For Physics\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Kingdom Of Prussia", "label": "Kingdom Of Prussia", "shape": "dot", "title": "\u003cb\u003eKingdom Of Prussia\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "United States", "label": "United States", "shape": "dot", "title": "\u003cb\u003eUnited States\u003c/b\u003e\u003cbr\u003e"}, {"color": "#ff6666", "id": "Adolf Hitler", "label": "Adolf Hitler", "shape": "dot", "title": "\u003cb\u003eAdolf Hitler\u003c/b\u003e\u003cbr\u003eOpenness: 0.00\u003cbr\u003eConscientiousness: 0.90\u003cbr\u003eExtraversion: 0.80\u003cbr\u003eAgreeableness: 0.00\u003cbr\u003eNeuroticism: 0.90\u003cbr\u003eDescriptors: fanatical, authoritarian, ruthless, charismatic, paranoid"}, {"color": "#6666ff", "id": "Nazi", "label": "Nazi", "shape": "dot", "title": "\u003cb\u003eNazi\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "American Citizenship", "label": "American Citizenship", "shape": "dot", "title": "\u003cb\u003eAmerican Citizenship\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "World War Ii", "label": "World War Ii", "shape": "dot", "title": "\u003cb\u003eWorld War Ii\u003c/b\u003e\u003cbr\u003e"}, {"color": "#ff6666", "id": "Franklin D. Roosevelt", "label": "Franklin D. Roosevelt", "shape": "dot", "title": "\u003cb\u003eFranklin D. Roosevelt\u003c/b\u003e\u003cbr\u003eOpenness: 0.50\u003cbr\u003eConscientiousness: 0.50\u003cbr\u003eExtraversion: 0.50\u003cbr\u003eAgreeableness: 0.50\u003cbr\u003eNeuroticism: 0.50\u003cbr\u003eDescriptors: "}, {"color": "#6666ff", "id": "German Nuclear Weapons Program", "label": "German Nuclear Weapons Program", "shape": "dot", "title": "\u003cb\u003eGerman Nuclear Weapons Program\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Manhattan Project", "label": "Manhattan Project", "shape": "dot", "title": "\u003cb\u003eManhattan Project\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Annus Mirabilis", "label": "Annus Mirabilis", "shape": "dot", "title": "\u003cb\u003eAnnus Mirabilis\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Brownian Motion", "label": "Brownian Motion", "shape": "dot", "title": "\u003cb\u003eBrownian Motion\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "General Theory Of Relativity", "label": "General Theory Of Relativity", "shape": "dot", "title": "\u003cb\u003eGeneral Theory Of Relativity\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Gravitation", "label": "Gravitation", "shape": "dot", "title": "\u003cb\u003eGravitation\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Spontaneous Emission", "label": "Spontaneous Emission", "shape": "dot", "title": "\u003cb\u003eSpontaneous Emission\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Stimulated Emission", "label": "Stimulated Emission", "shape": "dot", "title": "\u003cb\u003eStimulated Emission\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Laser", "label": "Laser", "shape": "dot", "title": "\u003cb\u003eLaser\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Maser", "label": "Maser", "shape": "dot", "title": "\u003cb\u003eMaser\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Quantum Electrodynamics", "label": "Quantum Electrodynamics", "shape": "dot", "title": "\u003cb\u003eQuantum Electrodynamics\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Quantum Optics", "label": "Quantum Optics", "shape": "dot", "title": "\u003cb\u003eQuantum Optics\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Statistical Mechanics", "label": "Statistical Mechanics", "shape": "dot", "title": "\u003cb\u003eStatistical Mechanics\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Quantum Physics Of Radiation", "label": "Quantum Physics Of Radiation", "shape": "dot", "title": "\u003cb\u003eQuantum Physics Of Radiation\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Photons", "label": "Photons", "shape": "dot", "title": "\u003cb\u003ePhotons\u003c/b\u003e\u003cbr\u003e"}, {"color": "#ff6666", "id": "Satyendra Nath Bose", "label": "Satyendra Nath Bose", "shape": "dot", "title": "\u003cb\u003eSatyendra Nath Bose\u003c/b\u003e\u003cbr\u003eOpenness: 0.50\u003cbr\u003eConscientiousness: 0.50\u003cbr\u003eExtraversion: 0.50\u003cbr\u003eAgreeableness: 0.50\u003cbr\u003eNeuroticism: 0.50\u003cbr\u003eDescriptors: "}, {"color": "#6666ff", "id": "Bose\u2013Einstein Statistics", "label": "Bose\u2013Einstein Statistics", "shape": "dot", "title": "\u003cb\u003eBose\u2013Einstein Statistics\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Unified Field Theory", "label": "Unified Field Theory", "shape": "dot", "title": "\u003cb\u003eUnified Field Theory\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Electromagnetism", "label": "Electromagnetism", "shape": "dot", "title": "\u003cb\u003eElectromagnetism\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Kingdom Of W\u00fcrttemberg", "label": "Kingdom Of W\u00fcrttemberg", "shape": "dot", "title": "\u003cb\u003eKingdom Of W\u00fcrttemberg\u003c/b\u003e\u003cbr\u003e"}, {"color": "#6666ff", "id": "Swiss Federal Polytechnic School In Zurich", "label": "Swiss Federal Polytechnic School In Zurich", "shape": "dot", "title": "\u003cb\u003eSwiss Federal Polytechnic School In Zurich\u003c/b\u003e\u003cbr\u003e"}, {"color": "#66ff66", "id": "Openness", "label": "Openness", "shape": "dot", "title": "\u003cb\u003eOpenness\u003c/b\u003e\u003cbr\u003e"}, {"color": "#66ff66", "id": "Conscientiousness", "label": "Conscientiousness", "shape": "dot", "title": "\u003cb\u003eConscientiousness\u003c/b\u003e\u003cbr\u003e"}, {"color": "#66ff66", "id": "Extraversion", "label": "Extraversion", "shape": "dot", "title": "\u003cb\u003eExtraversion\u003c/b\u003e\u003cbr\u003e"}, {"color": "#66ff66", "id": "Agreeableness", "label": "Agreeableness", "shape": "dot", "title": "\u003cb\u003eAgreeableness\u003c/b\u003e\u003cbr\u003e"}, {"color": "#66ff66", "id": "Neuroticism", "label": "Neuroticism", "shape": "dot", "title": "\u003cb\u003eNeuroticism\u003c/b\u003e\u003cbr\u003e"}]);
+                  edges = new vis.DataSet([{"arrows": "to", "from": "Albert Einstein", "label": "INTRODUCED_SPECIAL_THEORY_OF", "to": "Theory Of Relativity", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "ADVOCATED_AGAINST_INTRODUCTION_OF_RANDOMNESS_INTO", "to": "Quantum Theory", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "DEMONSTRATED_EQUIVALENCE_OF", "to": "E = Mc2", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "RECEIVED_AWARD", "to": "Nobel Prize In Physics", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "MOVED_TO", "to": "Switzerland", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "FORSOOK_CITIZENSHIP", "to": "German Citizenship", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "ACQUIRED_CITIZENSHIP", "to": "Swiss Citizenship", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "WORKED_AT", "to": "Swiss Patent Office", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "SUBMITTED_PHD_DISSERTATION_TO", "to": "University Of Zurich", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "MOVED_TO", "to": "Berlin", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "JOINED", "to": "Prussian Academy Of Sciences", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "JOINED", "to": "Humboldt University Of Berlin", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "DIRECTOR_OF", "to": "Kaiser Wilhelm Institute For Physics", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "BECAME_CITIZEN_OF", "to": "Kingdom Of Prussia", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "DECIDED_TO_REMAIN_IN", "to": "United States", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "HORRIFIED_BY_PERSECUTION_OF", "to": "Nazi", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "GRANTED_CITIZENSHIP", "to": "American Citizenship", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "ENDORSED_LETTER_ON_EVE_OF", "to": "World War Ii", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "ALERTED", "to": "Franklin D. Roosevelt", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "ALERTED_ABOUT", "to": "German Nuclear Weapons Program", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "RECOMMENDED_US_BEGIN_RESEARCH_CARRIED_OUT_AS", "to": "Manhattan Project", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "PUBLISHED_PAPERS_IN", "to": "Annus Mirabilis", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "OUTLINED_THEORY_OF", "to": "Photoelectric Effect", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "EXPLAINED", "to": "Brownian Motion", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "PUBLISHED_COSMOLOGICAL_PAPER_ON_IMPLICATIONS_OF", "to": "General Theory Of Relativity", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "INTRODUCED_CONCEPTS_OF", "to": "Spontaneous Emission", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "INTRODUCED_CONCEPTS_OF", "to": "Stimulated Emission", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "BENEFITED_DEVELOPMENTS_IN", "to": "Quantum Electrodynamics", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "BENEFITED_DEVELOPMENTS_IN", "to": "Quantum Optics", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "MADE_CONTRIBUTIONS_TO", "to": "Statistical Mechanics", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "NOTABLE_WORK_ON", "to": "Quantum Physics Of Radiation", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "RESEARCH_INVOLVED_LIGHT_CONSISTING_OF", "to": "Photons", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "COLLABORATED_WITH", "to": "Satyendra Nath Bose", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "LAID_GROUNDWORK_FOR", "to": "Bose\u2013Einstein Statistics", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "ATTEMPTED_TO_DEVISE", "to": "Unified Field Theory", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "SUBJECT_OF", "to": "Kingdom Of W\u00fcrttemberg", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "ENROLLED_IN", "to": "Swiss Federal Polytechnic School In Zurich", "width": 1}, {"arrows": "to", "from": "Albert Einstein", "label": "0.90", "to": "Openness", "width": 4.5}, {"arrows": "to", "from": "Albert Einstein", "label": "0.80", "to": "Conscientiousness", "width": 4.0}, {"arrows": "to", "from": "Albert Einstein", "label": "0.30", "to": "Extraversion", "width": 1.5}, {"arrows": "to", "from": "Albert Einstein", "label": "0.60", "to": "Agreeableness", "width": 3.0}, {"arrows": "to", "from": "Albert Einstein", "label": "0.40", "to": "Neuroticism", "width": 2.0}, {"arrows": "to", "from": "E = Mc2", "label": "ARISES_FROM", "to": "Theory Of Relativity", "width": 1}, {"arrows": "to", "from": "Nobel Prize In Physics", "label": "AWARDED_FOR", "to": "Photoelectric Effect", "width": 1}, {"arrows": "to", "from": "Swiss Patent Office", "label": "LOCATED_IN", "to": "Bern", "width": 1}, {"arrows": "to", "from": "Adolf Hitler", "label": "CAME_TO_POWER_IN", "to": "United States", "width": 1}, {"arrows": "to", "from": "Adolf Hitler", "label": "0.00", "to": "Openness", "width": 0.0}, {"arrows": "to", "from": "Adolf Hitler", "label": "0.90", "to": "Conscientiousness", "width": 4.5}, {"arrows": "to", "from": "Adolf Hitler", "label": "0.80", "to": "Extraversion", "width": 4.0}, {"arrows": "to", "from": "Adolf Hitler", "label": "0.00", "to": "Agreeableness", "width": 0.0}, {"arrows": "to", "from": "Adolf Hitler", "label": "0.90", "to": "Neuroticism", "width": 4.5}, {"arrows": "to", "from": "Franklin D. Roosevelt", "label": "0.50", "to": "Openness", "width": 2.5}, {"arrows": "to", "from": "Franklin D. Roosevelt", "label": "0.50", "to": "Conscientiousness", "width": 2.5}, {"arrows": "to", "from": "Franklin D. Roosevelt", "label": "0.50", "to": "Extraversion", "width": 2.5}, {"arrows": "to", "from": "Franklin D. Roosevelt", "label": "0.50", "to": "Agreeableness", "width": 2.5}, {"arrows": "to", "from": "Franklin D. Roosevelt", "label": "0.50", "to": "Neuroticism", "width": 2.5}, {"arrows": "to", "from": "General Theory Of Relativity", "label": "EXTENDED_SYSTEM_OF_MECHANICS_TO_INCORPORATE", "to": "Gravitation", "width": 1}, {"arrows": "to", "from": "Stimulated Emission", "label": "CORE_MECHANISM_BEHIND", "to": "Laser", "width": 1}, {"arrows": "to", "from": "Stimulated Emission", "label": "CORE_MECHANISM_BEHIND", "to": "Maser", "width": 1}, {"arrows": "to", "from": "Satyendra Nath Bose", "label": "0.50", "to": "Openness", "width": 2.5}, {"arrows": "to", "from": "Satyendra Nath Bose", "label": "0.50", "to": "Conscientiousness", "width": 2.5}, {"arrows": "to", "from": "Satyendra Nath Bose", "label": "0.50", "to": "Extraversion", "width": 2.5}, {"arrows": "to", "from": "Satyendra Nath Bose", "label": "0.50", "to": "Agreeableness", "width": 2.5}, {"arrows": "to", "from": "Satyendra Nath Bose", "label": "0.50", "to": "Neuroticism", "width": 2.5}, {"arrows": "to", "from": "Unified Field Theory", "label": "GENERALIZING", "to": "General Theory Of Relativity", "width": 1}, {"arrows": "to", "from": "Unified Field Theory", "label": "GENERALIZING_TO_INCLUDE", "to": "Electromagnetism", "width": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"physics": {"enabled": false, "stabilization": {"iterations": 100, "fit": true}, "barnesHut": {"gravitationalConstant": -2000, "centralGravity": 0.1, "springLength": 95, "springConstant": 0.04}, "solver": "barnesHut"}, "interaction": {"dragNodes": true, "navigationButtons": true}, "layout": {"improvedLayout": true}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

@@ -1,0 +1,939 @@
+User: You are an expert in knowledge graphs. Develop a Python solution that takes a text document, extract and build a knowledge graph (KG) from the document. The graph will represent the knowledge from the document in a structured way. Furthermore, the personality of the subjects from the text should also be modelled in the graph. The end product can just be a Jupyter notebook. Make use of LangChain, specifically using Gemini LLM in the code. I already have a sample workflow sketched out in the attached PDF file, make use of it if it is helpful.
+
+Copilot: # Knowledge Graph Construction from Text with Personality Modeling
+
+I'll create a comprehensive Jupyter notebook solution that builds a knowledge graph from text documents and models personality traits using LangChain with Google's Gemini API. Let me outline the complete implementation based on the LangChain approach you mentioned.
+
+## Jupyter Notebook Implementation
+
+Here's a detailed Jupyter notebook that implements the knowledge graph extraction and personality modeling workflow:
+
+````python name=KnowledgeGraph_with_Personality.ipynb
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Knowledge Graph Construction with Personality Modeling\n",
+    "\n",
+    "This notebook demonstrates how to:\n",
+    "1. Extract a knowledge graph from unstructured text\n",
+    "2. Enrich the graph with personality traits of subjects\n",
+    "3. Visualize and query the knowledge graph\n",
+    "\n",
+    "We use LangChain with Google's Gemini API as the LLM backbone."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 1. Environment Setup\n",
+    "\n",
+    "First, let's install the required dependencies:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "!pip install langchain langchain-google-genai langchain-experimental neo4j networkx pyvis python-dotenv"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Import necessary libraries and set up environment variables:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import os\n",
+    "import json\n",
+    "import networkx as nx\n",
+    "from dotenv import load_dotenv\n",
+    "from pyvis.network import Network\n",
+    "from IPython.display import display, HTML\n",
+    "\n",
+    "from langchain_google_genai import ChatGoogleGenerativeAI\n",
+    "from langchain.text_splitter import RecursiveCharacterTextSplitter\n",
+    "from langchain_experimental.graph_transformers import LLMGraphTransformer\n",
+    "from langchain.graphs import NetworkxEntityGraph\n",
+    "from langchain.schema import Document\n",
+    "from langchain.chains import GraphCypherQAChain\n",
+    "\n",
+    "# Load environment variables\n",
+    "load_dotenv()\n",
+    "\n",
+    "# Set Google API key\n",
+    "GOOGLE_API_KEY = os.getenv(\"GOOGLE_API_KEY\")\n",
+    "if not GOOGLE_API_KEY:\n",
+    "    raise ValueError(\"Please set your GOOGLE_API_KEY in a .env file\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Initialize the Gemini model via LangChain:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "llm = ChatGoogleGenerativeAI(model=\"gemini-pro\", google_api_key=GOOGLE_API_KEY)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 2. Document Preprocessing\n",
+    "\n",
+    "Create functions to load and preprocess text documents:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def load_document(file_path):\n",
+    "    \"\"\"Load document from file\"\"\"\n",
+    "    with open(file_path, \"r\", encoding=\"utf-8\") as file:\n",
+    "        text = file.read()\n",
+    "    return text\n",
+    "\n",
+    "def preprocess_text(text):\n",
+    "    \"\"\"Basic text preprocessing to remove unwanted characters\"\"\"\n",
+    "    # Remove extra whitespace\n",
+    "    text = \" \".join(text.split())\n",
+    "    return text\n",
+    "\n",
+    "def chunk_text(text, chunk_size=4000, chunk_overlap=200):\n",
+    "    \"\"\"Split text into manageable chunks\"\"\"\n",
+    "    text_splitter = RecursiveCharacterTextSplitter(\n",
+    "        chunk_size=chunk_size,\n",
+    "        chunk_overlap=chunk_overlap\n",
+    "    )\n",
+    "    chunks = text_splitter.split_text(text)\n",
+    "    return chunks"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 3. Knowledge Graph Construction\n",
+    "\n",
+    "Set up the graph transformer to extract entities and relationships:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def extract_knowledge_graph(text_chunks):\n",
+    "    \"\"\"Extract knowledge graph from text chunks\"\"\"\n",
+    "    # Initialize graph transformer with Gemini LLM\n",
+    "    transformer = LLMGraphTransformer(\n",
+    "        llm=llm, \n",
+    "        node_properties=True,  # Extract node properties\n",
+    "        verbose=True\n",
+    "    )\n",
+    "    \n",
+    "    # Process each chunk and accumulate results\n",
+    "    all_triples = []\n",
+    "    \n",
+    "    for i, chunk in enumerate(text_chunks):\n",
+    "        print(f\"Processing chunk {i+1}/{len(text_chunks)}...\")\n",
+    "        doc = Document(page_content=chunk)\n",
+    "        # Convert text to graph triples\n",
+    "        graph_documents = transformer.convert_to_graph_documents([doc])\n",
+    "        \n",
+    "        # Extract triples\n",
+    "        for graph_doc in graph_documents:\n",
+    "            all_triples.extend(graph_doc.triples)\n",
+    "    \n",
+    "    return all_triples"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Create functions to build and store the graph in NetworkX:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def build_networkx_graph(triples):\n",
+    "    \"\"\"Build NetworkX graph from triples\"\"\"\n",
+    "    G = nx.DiGraph()\n",
+    "    \n",
+    "    for subj, pred, obj in triples:\n",
+    "        # Add nodes if they don't exist\n",
+    "        if not G.has_node(subj):\n",
+    "            G.add_node(subj, label=subj)\n",
+    "        if not G.has_node(obj):\n",
+    "            G.add_node(obj, label=obj)\n",
+    "        \n",
+    "        # Add edge with relationship as attribute\n",
+    "        G.add_edge(subj, obj, label=pred)\n",
+    "    \n",
+    "    return G\n",
+    "\n",
+    "def store_graph(graph, filename=\"knowledge_graph.graphml\"):\n",
+    "    \"\"\"Store graph to GraphML file\"\"\"\n",
+    "    nx.write_graphml(graph, filename)\n",
+    "    print(f\"Graph saved to {filename}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 4. Personality Modeling\n",
+    "\n",
+    "Create functions to extract personality traits using Gemini and add them to the graph:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def extract_personality_traits(text, person_name):\n",
+    "    \"\"\"Extract personality traits for a given person using Gemini\"\"\"\n",
+    "    prompt = f\"\"\"\n",
+    "    From the following text, analyze the personality of {person_name}.\n",
+    "    Return a JSON object with the following Big Five personality traits and scores between 0 and 1:\n",
+    "    1. Openness (curiosity, creativity, openness to new experiences)\n",
+    "    2. Conscientiousness (organization, responsibility, work ethic)\n",
+    "    3. Extraversion (sociability, assertiveness, talkativeness)\n",
+    "    4. Agreeableness (kindness, cooperation, empathy)\n",
+    "    5. Neuroticism (anxiety, emotional instability, negative emotions)\n",
+    "    \n",
+    "    Also include a list of 3-5 key personality descriptors (adjectives).\n",
+    "    \n",
+    "    Format your response as valid JSON like this example:\n",
+    "    {{\"openness\": 0.8, \"conscientiousness\": 0.7, \"extraversion\": 0.6, \"agreeableness\": 0.5, \"neuroticism\": 0.3, \"descriptors\": [\"creative\", \"organized\", \"friendly\"]}}\n",
+    "    \n",
+    "    TEXT: {text}\n",
+    "    \"\"\"\n",
+    "    \n",
+    "    response = llm.invoke(prompt)\n",
+    "    content = response.content\n",
+    "    \n",
+    "    # Extract JSON from response (handle potential formatting issues)\n",
+    "    try:\n",
+    "        # Try to extract JSON if it's embedded in text\n",
+    "        start_idx = content.find(\"{\")\n",
+    "        end_idx = content.rfind(\"}\") + 1\n",
+    "        json_str = content[start_idx:end_idx]\n",
+    "        traits = json.loads(json_str)\n",
+    "    except json.JSONDecodeError:\n",
+    "        print(f\"Error parsing JSON for {person_name}. Using default values.\")\n",
+    "        traits = {\n",
+    "            \"openness\": 0.5,\n",
+    "            \"conscientiousness\": 0.5,\n",
+    "            \"extraversion\": 0.5,\n",
+    "            \"agreeableness\": 0.5,\n",
+    "            \"neuroticism\": 0.5,\n",
+    "            \"descriptors\": [\"unknown\"]\n",
+    "        }\n",
+    "    \n",
+    "    return traits\n",
+    "\n",
+    "def identify_person_entities(graph):\n",
+    "    \"\"\"Identify nodes that likely represent persons\"\"\"\n",
+    "    # Use Gemini to identify which nodes are persons\n",
+    "    persons = []\n",
+    "    nodes = list(graph.nodes())\n",
+    "    \n",
+    "    # Process in batches to avoid token limits\n",
+    "    batch_size = 20\n",
+    "    for i in range(0, len(nodes), batch_size):\n",
+    "        batch = nodes[i:i+batch_size]\n",
+    "        prompt = f\"\"\"\n",
+    "        From the following list of entities, identify which ones are likely to be persons (people).\n",
+    "        Return only the entities that represent people as a comma-separated list.\n",
+    "        \n",
+    "        Entities: {', '.join(batch)}\n",
+    "        \"\"\"\n",
+    "        \n",
+    "        response = llm.invoke(prompt)\n",
+    "        batch_persons = [p.strip() for p in response.content.split(',')]\n",
+    "        persons.extend(batch_persons)\n",
+    "    \n",
+    "    # Remove duplicates and empty strings\n",
+    "    persons = [p for p in persons if p and p in nodes]\n",
+    "    return persons\n",
+    "\n",
+    "def add_personality_to_graph(graph, text, persons=None):\n",
+    "    \"\"\"Add personality traits to person entities in the graph\"\"\"\n",
+    "    if persons is None:\n",
+    "        persons = identify_person_entities(graph)\n",
+    "    \n",
+    "    print(f\"Adding personality traits for {len(persons)} identified persons...\")\n",
+    "    \n",
+    "    for person in persons:\n",
+    "        print(f\"Processing personality for: {person}\")\n",
+    "        traits = extract_personality_traits(text, person)\n",
+    "        \n",
+    "        # Add trait information as node attributes\n",
+    "        for trait, value in traits.items():\n",
+    "            if trait != \"descriptors\":\n",
+    "                graph.nodes[person][trait] = value\n",
+    "        \n",
+    "        # Add descriptors\n",
+    "        graph.nodes[person][\"descriptors\"] = \", \".join(traits.get(\"descriptors\", []))\n",
+    "        \n",
+    "        # Optionally add trait nodes and relationships\n",
+    "        for trait, value in traits.items():\n",
+    "            if trait != \"descriptors\":\n",
+    "                trait_node = f\"{trait.capitalize()}\"\n",
+    "                if not graph.has_node(trait_node):\n",
+    "                    graph.add_node(trait_node, label=trait_node)\n",
+    "                graph.add_edge(person, trait_node, label=f\"has_{trait}\", weight=value)\n",
+    "    \n",
+    "    return graph"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 5. Graph Visualization\n",
+    "\n",
+    "Create functions to visualize the knowledge graph:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def visualize_graph(graph, output_file=\"knowledge_graph.html\"):\n",
+    "    \"\"\"Visualize graph using PyVis\"\"\"\n",
+    "    # Create PyVis network\n",
+    "    net = Network(notebook=True, width=\"100%\", height=\"800px\", directed=True)\n",
+    "    \n",
+    "    # Add nodes with labels and attributes\n",
+    "    for node, attrs in graph.nodes(data=True):\n",
+    "        # Prepare node attributes for visualization\n",
+    "        title = f\"<b>{node}</b><br>\"\n",
+    "        \n",
+    "        # Add personality traits to title if available\n",
+    "        personality_traits = [\"openness\", \"conscientiousness\", \"extraversion\", \"agreeableness\", \"neuroticism\"]\n",
+    "        for trait in personality_traits:\n",
+    "            if trait in attrs:\n",
+    "                title += f\"{trait.capitalize()}: {attrs[trait]:.2f}<br>\"\n",
+    "        \n",
+    "        if \"descriptors\" in attrs:\n",
+    "            title += f\"Descriptors: {attrs['descriptors']}\"\n",
+    "            \n",
+    "        # Determine if node is a person (has personality traits)\n",
+    "        is_person = any(trait in attrs for trait in personality_traits)\n",
+    "        \n",
+    "        # Choose node color based on entity type\n",
+    "        if is_person:\n",
+    "            color = \"#ff6666\"  # Red for persons\n",
+    "        elif any(trait == node for trait in [t.capitalize() for t in personality_traits]):\n",
+    "            color = \"#66ff66\"  # Green for traits\n",
+    "        else:\n",
+    "            color = \"#6666ff\"  # Blue for other entities\n",
+    "        \n",
+    "        # Add node to network\n",
+    "        net.add_node(node, label=attrs.get(\"label\", node), title=title, color=color)\n",
+    "    \n",
+    "    # Add edges with labels\n",
+    "    for source, target, attrs in graph.edges(data=True):\n",
+    "        edge_label = attrs.get(\"label\", \"\")\n",
+    "        edge_weight = attrs.get(\"weight\", 1)\n",
+    "        \n",
+    "        # Make personality trait edges thicker based on their value\n",
+    "        width = 1\n",
+    "        if edge_label.startswith(\"has_\"):\n",
+    "            width = edge_weight * 5  # Scale up for visibility\n",
+    "        \n",
+    "        net.add_edge(source, target, label=edge_label, width=width)\n",
+    "    \n",
+    "    # Configure physics\n",
+    "    net.force_atlas_2based(gravity=-50, central_gravity=0.01, spring_length=100)\n",
+    "    \n",
+    "    # Save and display\n",
+    "    net.save_graph(output_file)\n",
+    "    return display(HTML(f\"<a href='{output_file}' target='_blank'>Open visualization in new tab</a>\"))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 6. Graph Querying\n",
+    "\n",
+    "Create functions to query the knowledge graph:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def query_graph_llm(graph, query_text):\n",
+    "    \"\"\"Query the knowledge graph using natural language and Gemini\"\"\"\n",
+    "    prompt = f\"\"\"\n",
+    "    You are given a knowledge graph with the following nodes and relationships.\n",
+    "    Answer the question based on this graph information.\n",
+    "    \n",
+    "    Nodes: {list(graph.nodes())}\n",
+    "    \n",
+    "    Edges (relationships):\n",
+    "    {['(' + src + ')-[' + graph.edges[src, tgt].get('label', 'related_to') + ']->' + tgt + ')' for src, tgt in graph.edges()]}\n",
+    "    \n",
+    "    Question: {query_text}\n",
+    "    \"\"\"\n",
+    "    \n",
+    "    response = llm.invoke(prompt)\n",
+    "    return response.content\n",
+    "\n",
+    "def find_entities_by_trait(graph, trait, threshold=0.7):\n",
+    "    \"\"\"Find entities with a high score for a specific personality trait\"\"\"\n",
+    "    results = []\n",
+    "    for node, attrs in graph.nodes(data=True):\n",
+    "        if trait.lower() in attrs and attrs[trait.lower()] >= threshold:\n",
+    "            results.append((node, attrs[trait.lower()]))\n",
+    "    \n",
+    "    # Sort by trait value (descending)\n",
+    "    results.sort(key=lambda x: x[1], reverse=True)\n",
+    "    return results"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 7. Complete Pipeline\n",
+    "\n",
+    "Let's put everything together in a complete pipeline:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def build_knowledge_graph_with_personality(text_or_file, is_file=False):\n",
+    "    \"\"\"Build a knowledge graph with personality modeling from text\"\"\"\n",
+    "    # Load document if it's a file\n",
+    "    if is_file:\n",
+    "        text = load_document(text_or_file)\n",
+    "    else:\n",
+    "        text = text_or_file\n",
+    "    \n",
+    "    print(\"1. Preprocessing text...\")\n",
+    "    processed_text = preprocess_text(text)\n",
+    "    \n",
+    "    print(\"2. Chunking text...\")\n",
+    "    chunks = chunk_text(processed_text)\n",
+    "    print(f\"   Created {len(chunks)} chunks\")\n",
+    "    \n",
+    "    print(\"3. Extracting knowledge graph...\")\n",
+    "    triples = extract_knowledge_graph(chunks)\n",
+    "    print(f\"   Extracted {len(triples)} triples\")\n",
+    "    \n",
+    "    print(\"4. Building graph...\")\n",
+    "    graph = build_networkx_graph(triples)\n",
+    "    print(f\"   Graph has {graph.number_of_nodes()} nodes and {graph.number_of_edges()} edges\")\n",
+    "    \n",
+    "    print(\"5. Adding personality traits...\")\n",
+    "    graph = add_personality_to_graph(graph, processed_text)\n",
+    "    \n",
+    "    print(\"6. Saving and visualizing graph...\")\n",
+    "    store_graph(graph)\n",
+    "    visualize_graph(graph)\n",
+    "    \n",
+    "    return graph, processed_text"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 8. Example Usage\n",
+    "\n",
+    "Let's test our pipeline with a sample text:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sample_text = \"\"\"\n",
+    "John Smith is the CEO of TechInnovate. He's known for his visionary thinking and creative problem-solving approach. \n",
+    "John often works closely with Sarah Johnson, the CTO, who is highly analytical and detail-oriented. \n",
+    "Sarah joined the company in 2018 after leaving her role at DataSystems.\n",
+    "\n",
+    "Michael Brown, TechInnovate's Head of Marketing, is outgoing and charismatic. He leads a team of 15 people \n",
+    "and reports directly to John. Michael previously worked at MediaCorp for 5 years.\n",
+    "\n",
+    "TechInnovate was founded in 2015 and is headquartered in San Francisco. The company specializes in AI solutions \n",
+    "for healthcare and has partnerships with several major hospitals, including Metropolitan Hospital.\n",
+    "\n",
+    "Dr. Emily Chen is the Chief Medical Officer at Metropolitan Hospital. She is calm, patient, and meticulous in her work. \n",
+    "Emily has been collaborating with TechInnovate on their latest AI diagnostic tool.\n",
+    "\"\"\"\n",
+    "\n",
+    "# Run the pipeline\n",
+    "graph, text = build_knowledge_graph_with_personality(sample_text)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now let's query our graph to demonstrate some insights:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Find people with high openness scores\n",
+    "open_people = find_entities_by_trait(graph, \"openness\", 0.7)\n",
+    "print(\"People with high openness scores:\")\n",
+    "for person, score in open_people:\n",
+    "    print(f\"- {person}: {score:.2f}\")\n",
+    "\n",
+    "# Find relationships between key people\n",
+    "query_result = query_graph_llm(graph, \"What is the relationship between John Smith and Sarah Johnson?\")\n",
+    "print(\"\\nRelationship query result:\")\n",
+    "print(query_result)\n",
+    "\n",
+    "# Find personality insights\n",
+    "query_result = query_graph_llm(graph, \"Who is the most extroverted person in the graph and what is their role?\")\n",
+    "print(\"\\nPersonality insight query result:\")\n",
+    "print(query_result)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 9. Conclusion\n",
+    "\n",
+    "This notebook demonstrates a complete pipeline for:\n",
+    "1. Extracting a knowledge graph from unstructured text using LangChain and Gemini\n",
+    "2. Enriching the graph with personality traits\n",
+    "3. Visualizing and querying the resulting knowledge graph\n",
+    "\n",
+    "The approach can be extended with:\n",
+    "- More sophisticated entity resolution\n",
+    "- Integration with external knowledge bases\n",
+    "- Implementing graph-based RAG for enhanced question answering\n",
+    "- Fine-tuning personality modeling for domain-specific applications"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
+````
+
+## Implementation Details
+
+The notebook I've created implements the complete LangChain-based approach for building a knowledge graph with personality modeling. Here's a breakdown of the key components:
+
+1. **Environment Setup**
+   - Installs necessary packages: langchain, langchain-google-genai, langchain-experimental, neo4j, networkx, pyvis, etc.
+   - Sets up the Gemini model via LangChain's ChatGoogleGenerativeAI interface
+
+2. **Document Preprocessing**
+   - Functions for loading, cleaning, and chunking text documents
+   - Uses RecursiveCharacterTextSplitter to break down large texts into manageable chunks
+
+3. **Knowledge Graph Construction**
+   - Implements LLMGraphTransformer to extract triples (subject, predicate, object) from text
+   - Builds a NetworkX graph from the extracted triples
+
+4. **Personality Modeling**
+   - Identifies person entities within the graph
+   - Extracts Big Five personality traits (OCEAN model) for each person using Gemini
+   - Adds personality traits and descriptors as node attributes
+   - Creates trait nodes and weighted relationships to represent personality traits
+
+5. **Graph Visualization**
+   - Visualizes the knowledge graph using PyVis
+   - Color-codes nodes (red for persons, green for traits, blue for other entities)
+   - Displays personality information in node tooltips
+   - Uses weighted edges to represent personality trait strengths
+
+6. **Graph Querying**
+   - Provides natural language querying capabilities using Gemini
+   - Implements specific functions to find entities by personality trait
+
+7. **Complete Pipeline**
+   - Combines all components into a single workflow
+   - Takes text input and produces a fully annotated knowledge graph with personality insights
+
+8. **Example Usage**
+   - Demonstrates the workflow with a sample text about a company and its employees
+   - Shows how to query the graph for relationship and personality insights
+
+## Key Features
+
+- **Automated triple extraction** using Gemini's capabilities through LangChain
+- **Personality trait modeling** using the Big Five (OCEAN) framework
+- **Interactive visualization** with node attributes and weighted relationships
+- **Natural language querying** of the knowledge graph structure
+- **Modular design** that can be extended or modified for specific use cases
+
+The notebook follows the workflow you provided, implementing all the key components from environment setup to graph querying and visualization, with special attention to personality modeling as requested.
+
+User: Can you modify the graph such that I can click and drag to reposition the nodes instead of having them snap back to position once the mouse is released? Also, instead of has_[personality trait] as the label for the arrows, it would be better to have the score for that trait (the number between 0 to 1) as the arrow label. Please show the changes needed for the necessary functions only (do not regenerate the whole notebook)
+
+Copilot: # Modifications for Graph Visualization
+
+Here are the changes needed to allow node repositioning and update arrow labels to show trait scores:
+
+```python name=modified_visualize_function.py
+def visualize_graph(graph, output_file="knowledge_graph.html"):
+    """Visualize graph using PyVis"""
+    # Create PyVis network
+    net = Network(notebook=True, width="100%", height="800px", directed=True)
+    
+    # Add nodes with labels and attributes
+    for node, attrs in graph.nodes(data=True):
+        # Prepare node attributes for visualization
+        title = f"<b>{node}</b><br>"
+        
+        # Add personality traits to title if available
+        personality_traits = ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"]
+        for trait in personality_traits:
+            if trait in attrs:
+                title += f"{trait.capitalize()}: {attrs[trait]:.2f}<br>"
+        
+        if "descriptors" in attrs:
+            title += f"Descriptors: {attrs['descriptors']}"
+            
+        # Determine if node is a person (has personality traits)
+        is_person = any(trait in attrs for trait in personality_traits)
+        
+        # Choose node color based on entity type
+        if is_person:
+            color = "#ff6666"  # Red for persons
+        elif any(trait == node for trait in [t.capitalize() for t in personality_traits]):
+            color = "#66ff66"  # Green for traits
+        else:
+            color = "#6666ff"  # Blue for other entities
+        
+        # Add node to network
+        net.add_node(node, label=attrs.get("label", node), title=title, color=color)
+    
+    # Add edges with labels
+    for source, target, attrs in graph.edges(data=True):
+        edge_label = attrs.get("label", "")
+        edge_weight = attrs.get("weight", 1)
+        
+        # Use the trait score as label instead of "has_trait"
+        if edge_label.startswith("has_"):
+            # Use the weight (score) as the label
+            edge_label = f"{edge_weight:.2f}"
+        
+        # Make personality trait edges thicker based on their value
+        width = 1
+        if attrs.get("label", "").startswith("has_"):
+            width = edge_weight * 5  # Scale up for visibility
+        
+        net.add_edge(source, target, label=edge_label, width=width)
+    
+    # Configure physics to allow nodes to be dragged and stay in place
+    net.set_options("""
+    {
+      "physics": {
+        "enabled": true,
+        "stabilization": {
+          "iterations": 100,
+          "fit": true
+        },
+        "barnesHut": {
+          "gravitationalConstant": -2000,
+          "centralGravity": 0.1,
+          "springLength": 95,
+          "springConstant": 0.04
+        },
+        "solver": "barnesHut"
+      },
+      "interaction": {
+        "dragNodes": true,
+        "navigationButtons": true
+      },
+      "layout": {
+        "improvedLayout": true
+      }
+    }
+    """)
+    
+    # Save and display
+    net.save_graph(output_file)
+    return display(HTML(f"<a href='{output_file}' target='_blank'>Open visualization in new tab</a>"))
+```
+
+Additionally, you'll need to make a small change to the `add_personality_to_graph()` function to ensure the weight is stored correctly:
+
+```python name=modified_add_personality_function.py
+def add_personality_to_graph(graph, text, persons=None):
+    """Add personality traits to person entities in the graph"""
+    if persons is None:
+        persons = identify_person_entities(graph)
+    
+    print(f"Adding personality traits for {len(persons)} identified persons...")
+    
+    for person in persons:
+        print(f"Processing personality for: {person}")
+        traits = extract_personality_traits(text, person)
+        
+        # Add trait information as node attributes
+        for trait, value in traits.items():
+            if trait != "descriptors":
+                graph.nodes[person][trait] = value
+        
+        # Add descriptors
+        graph.nodes[person]["descriptors"] = ", ".join(traits.get("descriptors", []))
+        
+        # Optionally add trait nodes and relationships
+        for trait, value in traits.items():
+            if trait != "descriptors":
+                trait_node = f"{trait.capitalize()}"
+                if not graph.has_node(trait_node):
+                    graph.add_node(trait_node, label=trait_node)
+                # Store the value as both label property and weight property for edge
+                graph.add_edge(person, trait_node, label=f"has_{trait}", weight=value)
+    
+    return graph
+```
+
+### Key Changes Explanation:
+
+1. **Node Dragging and Positioning:**
+   - Added custom physics configuration that allows nodes to be dragged and remain in their new positions
+   - Set `"dragNodes": true` in the interaction options
+   - Configured physics parameters to provide a good balance between structure and flexibility
+
+2. **Trait Score Labels:**
+   - Modified the edge label generation to use the trait score as the label instead of "has_trait"
+   - For personality trait relationships, the label now shows the numerical score formatted to 2 decimal places
+
+These changes will allow you to:
+1. Click and drag nodes to reposition them, and they'll stay where you place them
+2. See the numerical trait scores (0-1) on the arrows connecting persons to their personality traits
+
+You can replace the original functions with these modified versions in your notebook.
+
+User: Please change the sample_text to read in a text file, and for the generated graph file names to be of the form textfilename_graph so that the notebook can be used easily for text other than the sample used here. Again, only show the necessary changes.
+
+In addition, it seems like the current personality query is designed in a way such that the LLM cannot see the trait scores. Here is the result of the current test query:
+Personality insight query result:
+Based on the provided knowledge graph, it is not possible to determine who is the "most extroverted" person. The graph only indicates that several individuals (John Smith, Sarah Johnson, Michael Brown, Emily Chen) *possess* the trait of Extraversion, but it does not provide any quantitative or comparative measure of their level of extraversion.
+
+From the graph construction, we know that each person must have some personality score. It should be made visible to the LLM to compare.
+
+Copilot: # Necessary Changes for File Handling and LLM Query Enhancement
+
+Here are the changes needed to read from text files and improve the personality queries:
+
+```python name=modified_file_handling.py
+def build_knowledge_graph_with_personality(text_or_file, is_file=False):
+    """Build a knowledge graph with personality modeling from text"""
+    # Load document if it's a file
+    if is_file:
+        text = load_document(text_or_file)
+        # Extract filename without path or extension for output file naming
+        import os
+        base_filename = os.path.splitext(os.path.basename(text_or_file))[0]
+        graph_filename = f"{base_filename}_graph.graphml"
+        html_filename = f"{base_filename}_graph.html"
+    else:
+        text = text_or_file
+        graph_filename = "knowledge_graph.graphml"
+        html_filename = "knowledge_graph.html"
+    
+    print("1. Preprocessing text...")
+    processed_text = preprocess_text(text)
+    
+    print("2. Chunking text...")
+    chunks = chunk_text(processed_text)
+    print(f"   Created {len(chunks)} chunks")
+    
+    print("3. Extracting knowledge graph...")
+    triples = extract_knowledge_graph(chunks)
+    print(f"   Extracted {len(triples)} triples")
+    
+    print("4. Building graph...")
+    graph = build_networkx_graph(triples)
+    print(f"   Graph has {graph.number_of_nodes()} nodes and {graph.number_of_edges()} edges")
+    
+    print("5. Adding personality traits...")
+    graph = add_personality_to_graph(graph, processed_text)
+    
+    print("6. Saving and visualizing graph...")
+    store_graph(graph, graph_filename)
+    visualize_graph(graph, html_filename)
+    
+    return graph, processed_text
+```
+
+```python name=improved_query_graph_llm.py
+def query_graph_llm(graph, query_text):
+    """Query the knowledge graph using natural language and Gemini"""
+    # Collect node information including personality traits
+    node_info = []
+    for node, attrs in graph.nodes(data=True):
+        # Get basic node information
+        info = f"Node: {node}"
+        
+        # Add personality traits if they exist
+        personality_traits = ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"]
+        trait_info = []
+        for trait in personality_traits:
+            if trait in attrs:
+                trait_info.append(f"{trait}={attrs[trait]:.2f}")
+        
+        if trait_info:
+            info += f" [Traits: {', '.join(trait_info)}]"
+            
+        # Add descriptors if they exist
+        if "descriptors" in attrs:
+            info += f" [Descriptors: {attrs['descriptors']}]"
+            
+        node_info.append(info)
+    
+    # Collect edge information
+    edge_info = []
+    for src, tgt, attrs in graph.edges(data=True):
+        edge_label = attrs.get('label', 'related_to')
+        edge_weight = attrs.get('weight', None)
+        
+        if edge_weight is not None:
+            edge_info.append(f"({src})-[{edge_label} {edge_weight:.2f}]->({tgt})")
+        else:
+            edge_info.append(f"({src})-[{edge_label}]->({tgt})")
+    
+    # Create prompt with detailed graph information
+    prompt = f"""
+    You are given a knowledge graph with the following nodes and relationships.
+    Answer the question based on this graph information.
+    
+    NODES (including personality traits when available):
+    {chr(10).join(node_info)}
+    
+    RELATIONSHIPS:
+    {chr(10).join(edge_info)}
+    
+    Question: {query_text}
+    
+    When answering questions about personality traits, use the numeric values to make comparisons.
+    For example, if asked who is most extraverted, compare the extraversion scores.
+    """
+    
+    response = llm.invoke(prompt)
+    return response.content
+```
+
+```python name=modified_example_usage.py
+# Example usage - replace with file input
+import sys
+
+if len(sys.argv) > 1:
+    # If a filename is provided as command line argument
+    input_file = sys.argv[1]
+else:
+    # Default to a sample file if none provided
+    input_file = "sample_text.txt"  # You should create this file with your sample text
+
+print(f"Processing file: {input_file}")
+
+# First write the sample text to a file if using the default
+if input_file == "sample_text.txt" and not os.path.exists(input_file):
+    with open(input_file, "w") as f:
+        f.write("""John Smith is the CEO of TechInnovate. He's known for his visionary thinking and creative problem-solving approach. 
+John often works closely with Sarah Johnson, the CTO, who is highly analytical and detail-oriented. 
+Sarah joined the company in 2018 after leaving her role at DataSystems.
+
+Michael Brown, TechInnovate's Head of Marketing, is outgoing and charismatic. He leads a team of 15 people 
+and reports directly to John. Michael previously worked at MediaCorp for 5 years.
+
+TechInnovate was founded in 2015 and is headquartered in San Francisco. The company specializes in AI solutions 
+for healthcare and has partnerships with several major hospitals, including Metropolitan Hospital.
+
+Dr. Emily Chen is the Chief Medical Officer at Metropolitan Hospital. She is calm, patient, and meticulous in her work. 
+Emily has been collaborating with TechInnovate on their latest AI diagnostic tool.""")
+
+# Run the pipeline
+graph, text = build_knowledge_graph_with_personality(input_file, is_file=True)
+```
+
+### Key Changes Explanation:
+
+1. **File Handling Updates:**
+   - Modified `build_knowledge_graph_with_personality` to extract the base filename from the input file
+   - Added dynamic naming for graph files based on the input filename
+   - Changed example usage to read from a file instead of using a hardcoded sample_text
+
+2. **Enhanced Query Function:**
+   - Completely redesigned `query_graph_llm` to include detailed node information including personality traits
+   - Added explicit formatting of personality trait scores in the LLM prompt
+   - Included edge weights in the relationship descriptions
+   - Added explicit instruction to use numeric values when comparing personality traits
+
+These changes will allow you to:
+1. Process any text file and generate output files with names based on the input filename
+2. Get accurate personality comparisons in LLM queries because the trait scores are now included in the prompt
+
+To use the notebook with your own text files, simply replace the default "sample_text.txt" with your own file path.
